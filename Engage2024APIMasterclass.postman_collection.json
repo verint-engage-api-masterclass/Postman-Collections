@@ -1,0 +1,326 @@
+{
+	"info": {
+		"_postman_id": "e3abd11a-a123-4de0-a893-cc5134546c9a",
+		"name": "Engage2024APIMasterclass",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "38155814",
+		"_collection_link": "https://lunar-spaceship-224011.postman.co/workspace/Verint-Engage~8409314a-ac69-4c26-81e2-41a50b8bbec0/collection/38155814-e3abd11a-a123-4de0-a893-cc5134546c9a?action=share&source=collection_link&creator=38155814"
+	},
+	"item": [
+		{
+			"name": "Get All Employees",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var sdk = require('postman-collection');\r",
+							"var crypto = require(\"crypto-js\");\r",
+							" \r",
+							"//get api key and key id\r",
+							"var APIKeyId = pm.environment.get(\"api_key_id\"),\r",
+							"APIKey = pm.environment.get(\"api_key\");\r",
+							" \r",
+							"//get ISO 8601 date and time\r",
+							"function ISODateString(d) {\r",
+							"function pad(n) {\r",
+							"return n < 10 ? '0' + n : n\r",
+							"}\r",
+							"return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + \r",
+							"pad(d.getUTCDate()) + 'T' + pad(d.getUTCHours()) + ':' + \r",
+							"pad(d.getUTCMinutes()) + ':' + pad(d.getUTCSeconds()) + 'Z'\r",
+							"}\r",
+							" \r",
+							"//generate base64url by using cryptojs\r",
+							"function base64url(input) {\r",
+							"var base64String = crypto.enc.Base64.stringify(input);\r",
+							"return urlConvertBase64(base64String);\r",
+							"}\r",
+							" \r",
+							"//convert base64url to base64\r",
+							"function debase64url (str) {\r",
+							"return (str + '==='.slice((str.length + 3) % 4))\r",
+							".replace(/-/g, '+')\r",
+							".replace(/_/g, '/')\r",
+							"}\r",
+							" \r",
+							"//convert to base 64 url\r",
+							"function urlConvertBase64(input) {\r",
+							"var output = input.replace(/=+$/, '');\r",
+							"output = output.replace(/\\+/g, '-');\r",
+							"output = output.replace(/\\//g, '_');\r",
+							" \r",
+							"return output;\r",
+							"}\r",
+							" \r",
+							"var replaceVars = function(string)\r",
+							"{\r",
+							"    //console.log(string);\r",
+							"return string.toString().replace(/{{.+?}}/g, function(match)\r",
+							"{\r",
+							"var varName = match.substr(2, match.length - 4);\r",
+							"//console.log(\"varName=\" + varName);\r",
+							"var varValue = pm.environment.get(varName) || pm.globals.get(varName) || pm.collectionVariables.get(varName);\r",
+							"return varValue ? replaceVars(varValue) : match; // recursive!\r",
+							"});\r",
+							"};\r",
+							" \r",
+							" \r",
+							"// get 32 bytes random;\r",
+							"var random = crypto.lib.WordArray.random(16);\r",
+							" \r",
+							"//get path expanding any variables that exist\r",
+							"var fullPath = replaceVars(pm.request.url);\r",
+							"//console.log(\"fullPath=\" + fullPath);\r",
+							"var loc = new sdk.Url(fullPath);\r",
+							"var path = loc.getPath();\r",
+							"//console.log(\"path=\" + path); \r",
+							"//generate canonicalizedHeader\r",
+							"var ref = pm.request.headers.toObject(true);\r",
+							"var canonicalizedHeader = \"\";\r",
+							" \r",
+							"for (var key in ref) {\r",
+							" \r",
+							"//only headers with \"verint-\" prefix can be used\r",
+							"if (key.substring(0, 7).toLowerCase() != \"verint-\") continue;\r",
+							" \r",
+							"canonicalizedHeader += (key + \":\");\r",
+							"var value = ref[key];\r",
+							" \r",
+							"canonicalizedHeader += value;\r",
+							"canonicalizedHeader += \"\\n\";\r",
+							"}\r",
+							" \r",
+							"//make canonicalizedHeader it lower case\r",
+							"canonicalizedHeader = canonicalizedHeader.toLowerCase();\r",
+							" \r",
+							"//get String to sign\r",
+							"var salt = base64url(random);\r",
+							"var method = pm.request.method;\r",
+							"var issuedAt = ISODateString(new Date());\r",
+							" \r",
+							"var stringToSign = salt + \"\\n\" + method + \"\\n\" + path + \"\\n\" + issuedAt +\r",
+							"\"\\n\" + canonicalizedHeader + \"\\n\";\r",
+							" \r",
+							"var hash = crypto.HmacSHA256(stringToSign, \r",
+							"crypto.enc.Base64.parse(debase64url(APIKey)));\r",
+							" \r",
+							"//get an signature\r",
+							"var signature = crypto.enc.Base64.stringify(hash);\r",
+							" \r",
+							"//String prefix\r",
+							"var verintAuthId = \"Vrnt-1-HMAC-SHA256\";\r",
+							" \r",
+							"//Generate Authorization Header Value\r",
+							"var authHeaderValue = verintAuthId + \" \" + \"salt=\" + salt + \",\" + \"iat=\" + \r",
+							"issuedAt + \",\" + \"kid=\" + APIKeyId + \",\" + \"sig=\" + \r",
+							"urlConvertBase64(signature);\r",
+							" \r",
+							"pm.globals.set(\"Authorization\", authHeaderValue);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{host}}/wfo/user-mgmt-api/v1/employees",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"wfo",
+						"user-mgmt-api",
+						"v1",
+						"employees"
+					],
+					"query": [
+						{
+							"key": "empId",
+							"value": "",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Interaction Search Specific Columns",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"var sdk = require('postman-collection');\r",
+							"var crypto = require(\"crypto-js\");\r",
+							" \r",
+							"//get api key and key id\r",
+							"var APIKeyId = pm.environment.get(\"api_key_id\"),\r",
+							"APIKey = pm.environment.get(\"api_key\");\r",
+							" \r",
+							"//get ISO 8601 date and time\r",
+							"function ISODateString(d) {\r",
+							"function pad(n) {\r",
+							"return n < 10 ? '0' + n : n\r",
+							"}\r",
+							"return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + \r",
+							"pad(d.getUTCDate()) + 'T' + pad(d.getUTCHours()) + ':' + \r",
+							"pad(d.getUTCMinutes()) + ':' + pad(d.getUTCSeconds()) + 'Z'\r",
+							"}\r",
+							" \r",
+							"//generate base64url by using cryptojs\r",
+							"function base64url(input) {\r",
+							"var base64String = crypto.enc.Base64.stringify(input);\r",
+							"return urlConvertBase64(base64String);\r",
+							"}\r",
+							" \r",
+							"//convert base64url to base64\r",
+							"function debase64url (str) {\r",
+							"return (str + '==='.slice((str.length + 3) % 4))\r",
+							".replace(/-/g, '+')\r",
+							".replace(/_/g, '/')\r",
+							"}\r",
+							" \r",
+							"//convert to base 64 url\r",
+							"function urlConvertBase64(input) {\r",
+							"var output = input.replace(/=+$/, '');\r",
+							"output = output.replace(/\\+/g, '-');\r",
+							"output = output.replace(/\\//g, '_');\r",
+							" \r",
+							"return output;\r",
+							"}\r",
+							" \r",
+							"var replaceVars = function(string)\r",
+							"{\r",
+							"    //console.log(string);\r",
+							"return string.toString().replace(/{{.+?}}/g, function(match)\r",
+							"{\r",
+							"var varName = match.substr(2, match.length - 4);\r",
+							"//console.log(\"varName=\" + varName);\r",
+							"var varValue = pm.environment.get(varName) || pm.globals.get(varName) || pm.collectionVariables.get(varName);\r",
+							"return varValue ? replaceVars(varValue) : match; // recursive!\r",
+							"});\r",
+							"};\r",
+							" \r",
+							" \r",
+							"// get 32 bytes random;\r",
+							"var random = crypto.lib.WordArray.random(16);\r",
+							" \r",
+							"//get path expanding any variables that exist\r",
+							"var fullPath = replaceVars(pm.request.url);\r",
+							"//console.log(\"fullPath=\" + fullPath);\r",
+							"var loc = new sdk.Url(fullPath);\r",
+							"var path = loc.getPath();\r",
+							"//console.log(\"path=\" + path); \r",
+							"//generate canonicalizedHeader\r",
+							"var ref = pm.request.headers.toObject(true);\r",
+							"var canonicalizedHeader = \"\";\r",
+							" \r",
+							"for (var key in ref) {\r",
+							" \r",
+							"//only headers with \"verint-\" prefix can be used\r",
+							"if (key.substring(0, 7).toLowerCase() != \"verint-\") continue;\r",
+							" \r",
+							"canonicalizedHeader += (key + \":\");\r",
+							"var value = ref[key];\r",
+							" \r",
+							"canonicalizedHeader += value;\r",
+							"canonicalizedHeader += \"\\n\";\r",
+							"}\r",
+							" \r",
+							"//make canonicalizedHeader it lower case\r",
+							"canonicalizedHeader = canonicalizedHeader.toLowerCase();\r",
+							" \r",
+							"//get String to sign\r",
+							"var salt = base64url(random);\r",
+							"var method = pm.request.method;\r",
+							"var issuedAt = ISODateString(new Date());\r",
+							" \r",
+							"var stringToSign = salt + \"\\n\" + method + \"\\n\" + path + \"\\n\" + issuedAt +\r",
+							"\"\\n\" + canonicalizedHeader + \"\\n\";\r",
+							" \r",
+							"var hash = crypto.HmacSHA256(stringToSign, \r",
+							"crypto.enc.Base64.parse(debase64url(APIKey)));\r",
+							" \r",
+							"//get an signature\r",
+							"var signature = crypto.enc.Base64.stringify(hash);\r",
+							" \r",
+							"//String prefix\r",
+							"var verintAuthId = \"Vrnt-1-HMAC-SHA256\";\r",
+							" \r",
+							"//Generate Authorization Header Value\r",
+							"var authHeaderValue = verintAuthId + \" \" + \"salt=\" + salt + \",\" + \"iat=\" + \r",
+							"issuedAt + \",\" + \"kid=\" + APIKeyId + \",\" + \"sig=\" + \r",
+							"urlConvertBase64(signature);\r",
+							" \r",
+							"pm.globals.set(\"Authorization\", authHeaderValue);"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \r\n    \"ConditionsString\": \"CATEGORY_ID = '100000001'\", \r\n    \"period\": \r\n    { \r\n        \"BeginPeriod\": \"2022-11-14T00:00:00\", \r\n        \"EndPeriod\": \"2022-11-22T00:00:00\", \r\n        \"Type\": \"Absolute\" \r\n    }, \r\n    \"RequestedColumns\": \r\n    [\r\n        \"call_id\",\r\n        \"transaction_id\",\r\n        \"categories_xml\",\r\n        \"ifind_categories\"\r\n    ],\r\n    \"CommandTimoutSeconds\": 30 \r\n}  ",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{host}}/DASWebAPI/Query/ExecuteDynamicQuery",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"DASWebAPI",
+						"Query",
+						"ExecuteDynamicQuery"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
